@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Widgets;
+namespace App\Filament\Resources\StationaryResource\Widgets;
 
 use App\Models\Stationary;
 use Filament\Widgets\TableWidget as BaseWidget;

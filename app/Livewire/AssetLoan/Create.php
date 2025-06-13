@@ -34,6 +34,7 @@ class Create extends Component
         unset($this->rows[$index]);
         $this->rows = array_values($this->rows);
     }
+    
 
 public function submit()
 {
@@ -74,24 +75,33 @@ public function submit()
     $newNumber = str_pad($lastNumber + 1, 5, '0', STR_PAD_LEFT);
 
     // Gabungkan kode barang semua asset yang dipinjam sekaligus (misal pakai dash)
-    $assetCodes = [];
-    foreach ($this->rows as $row) {
-        $asset = Asset::find($row['asset_id']);
-        $assetCodes[] = $asset->code ?? 'UNKNOWN';
-    }
-    $kodeBarangGabungan = implode('-', $assetCodes);
+foreach ($this->rows as $row) {
+    $lastLoan = AssetLoan::whereNotNull('code')
+        ->orderBy('created_at', 'desc')
+        ->first();
 
-    // Kode peminjaman final yang sama untuk semua asset
-    $kodePeminjaman = "{$newNumber}/{$departmentCode}/{$kodeBarangGabungan}";
-
-    foreach ($this->rows as $row) {
-        AssetLoan::create([
-            'user_id' => $user->id,
-            'asset_id' => $row['asset_id'],
-            'status' => 'pending',
-            'code' => $kodePeminjaman,
-        ]);
+    $lastNumber = 0;
+    if ($lastLoan) {
+        $parts = explode('/', $lastLoan->code);
+        if (count($parts) > 0) {
+            $lastNumber = (int) ltrim($parts[0], '0');
+        }
     }
+
+    $newNumber = str_pad($lastNumber + 1, 5, '0', STR_PAD_LEFT);
+
+    $asset = Asset::find($row['asset_id']);
+    $assetCode = $asset->code ?? 'UNKNOWN';
+
+    $kodePeminjaman = "{$newNumber}/{$departmentCode}/{$assetCode}";
+
+    AssetLoan::create([
+        'user_id' => $user->id,
+        'asset_id' => $row['asset_id'],
+        'status' => 'pending',
+        'code' => $kodePeminjaman,
+    ]);
+}
 
     session()->flash('success', 'Peminjaman asset berhasil diajukan.');
     $this->reset('rows');

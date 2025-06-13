@@ -1,11 +1,10 @@
 <?php
 
-namespace App\Filament\Widgets;
+namespace App\Filament\Resources\AssetResource\Widgets;
 
 use App\Models\Asset;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\ImageColumn;
 use Illuminate\Database\Eloquent\Builder;
 
 class LatestAssets extends BaseWidget

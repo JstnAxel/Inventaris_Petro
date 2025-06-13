@@ -13,6 +13,8 @@ new #[Layout('components.layouts.auth')] class extends Component {
     public string $email = '';
     public string $password = '';
     public string $password_confirmation = '';
+    public string $department = '';
+    public string $NIK = '';
 
     /**
      * Handle an incoming registration request.
@@ -22,6 +24,8 @@ new #[Layout('components.layouts.auth')] class extends Component {
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'department' => ['required', 'string', 'max:255'],
+            'NIK' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ], [
             'email.unique' => 'Email ini sudah terdaftar. Silakan gunakan email lain.',
@@ -49,6 +53,10 @@ new #[Layout('components.layouts.auth')] class extends Component {
     <x-auth-session-status class="text-center" :status="session('status')" />
 
     <form wire:submit="register" class="flex flex-col gap-6">
+
+        <flux:input wire:model="NIK" :label="__('NIK')" type="text"
+            :placeholder="__('Masukkan NIK')" />
+
         <!-- Name -->
         <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name"
             :placeholder="__('Full name')" />
@@ -56,6 +64,10 @@ new #[Layout('components.layouts.auth')] class extends Component {
         <!-- Email Address -->
         <flux:input wire:model="email" :label="__('Email address')" type="email" required autocomplete="email"
             placeholder="email@example.com" class="@error('email') border-red-500 @enderror"/>
+
+        <!-- Department -->
+        <flux:input wire:model="department" :label="__('Department')" type="text"
+            :placeholder="__('Department')" />
 
         <!-- Password -->
         <flux:input wire:model="password" :label="__('Password')" type="password" required autocomplete="new-password"

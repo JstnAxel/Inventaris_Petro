@@ -3,9 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\StationaryResource\Pages;
-use App\Filament\Resources\StationaryResource\RelationManagers;
 use App\Models\Stationary;
-use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -34,7 +32,7 @@ class StationaryResource extends Resource
         return 'Stationery';
     }
 
-    protected static ?string $recordTitleAttribute = 'title';
+    protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $navigationIcon = 'heroicon-o-pencil';
     protected static ?string $navigationGroup = 'Inventory';

@@ -3,120 +3,104 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AssetResource\Pages;
-use App\Filament\Resources\AssetResource\RelationManagers;
 use App\Models\Asset;
-use Filament\Forms;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Columns\ImageColumn;
-use Filament\Tables\Columns\TextColumn;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Forms\Components\Group;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Grid;
-
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\FileUpload;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Actions\Action;
 
 class AssetResource extends Resource
 {
     protected static ?string $model = Asset::class;
 
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationLabel = 'Asset';
+    protected static ?string $recordTitleAttribute = 'name';
     protected static ?string $slug = 'inventory/assets';
-
-    protected static ?string $navigationIcon = 'heroicon-o-archive-box';
-
     protected static ?string $navigationGroup = 'Inventory';
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                TextInput::make('code')
-                    ->label('Code')
-                    ->disabled()
-                    ->dehydrated(false) // prevent form submission overwriting
-                    ->visibleOn('edit'),
-                TextInput::make('name')->required(),
-                Select::make('category_id')
-                    ->label('Category')
-                    ->relationship('category', 'name', fn($query) => $query->where('type', 'asset'))
-                    ->required(),
-                Select::make('status')
-                    ->options([
-                        'available' => 'Available',
-                        'loaned' => 'Loaned',
-                        'maintenance' => 'Maintenance',
-                    ])->required(),
-                Textarea::make('note'),
-                FileUpload::make('image')->image()->disk('public')->directory('assets'),
-            ]);
+        return $form->schema([
+            TextInput::make('code')
+                ->label('Code')
+                ->disabled()
+                ->dehydrated(false)
+                ->visibleOn('edit'),
+
+            TextInput::make('name')
+                ->required()
+                ->datalist(
+                    Asset::query()->select('name')->distinct()->pluck('name')->toArray()
+                ),
+
+            Select::make('category_id')
+                ->label('Category')
+                ->relationship('category', 'name', fn($query) => $query->where('type', 'asset'))
+                ->required(),
+
+            Select::make('status')
+                ->options([
+                    'available' => 'Available',
+                    'loaned' => 'Loaned',
+                    'maintenance' => 'Maintenance',
+                ])->required(),
+
+            Textarea::make('note'),
+
+            FileUpload::make('image')->image()->disk('public')->directory('assets'),
+        ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
-            ->defaultSort('created_at', 'desc')
+            ->query(function () {
+                $ids = Asset::query()
+                    ->selectRaw('MIN(id) as id')
+                    ->groupBy('name')
+                    ->pluck('id');
+                return Asset::query()->whereIn('id', $ids);
+            })
             ->columns([
-                ImageColumn::make('image')
-                    ->square()
-                    ->label('Foto'),
-                TextColumn::make('code'),
-                TextColumn::make('name')->searchable(),
-                TextColumn::make('category.name')->label('Category'),
+                TextColumn::make('name')->label('Asset Name')->searchable(),
+
+                TextColumn::make('total')
+                    ->label('Total Items')
+                    ->getStateUsing(fn($record) =>
+                        Asset::where('name', $record->name)->count()
+                    ),
+
                 TextColumn::make('status')
+                    ->label('Status')
+                    ->getStateUsing(fn($record) => match (true) {
+                        Asset::where('name', $record->name)->where('status', 'available')->exists() => 'available',
+                        Asset::where('name', $record->name)->where('status', 'maintenance')->exists() => 'maintenance',
+                        Asset::where('name', $record->name)->where('status', 'loaned')->exists() => 'loaned',
+                        default => 'unknown',
+                    })
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn($state) => match ($state) {
                         'loaned' => 'warning',
                         'available' => 'success',
                         'maintenance' => 'danger',
                         default => 'gray',
                     }),
-                TextColumn::make('user.name')
-                    ->label('Input By')
-                    ->sortable(),
-
+            ])
+            ->actions([
+                Action::make('view')
+                    ->label('View Items')
+                    ->url(fn($record) => route('filament.admin.resources.inventory.assets.view', ['name' => $record->name])),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
-            ])
-            ->actions([
-                Tables\Actions\ViewAction::make(),  // Tombol view detail
-
-                Tables\Actions\EditAction::make()
-                    ->visible(fn($record) => !$record->trashed()),
-
-                Tables\Actions\DeleteAction::make()
-                    ->visible(fn($record) => !$record->trashed()),
-
-                Tables\Actions\RestoreAction::make()
-                    ->visible(fn($record) => $record->trashed()),
-
-                Tables\Actions\ForceDeleteAction::make()
-                    ->label('Delete Permanent')
-                    ->visible(fn($record) => $record->trashed())
-                    ->requiresConfirmation()
-                    ->color('danger'),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
-                ]),
             ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
     }
 
     public static function getPages(): array
@@ -125,16 +109,7 @@ class AssetResource extends Resource
             'index' => Pages\ListAssets::route('/'),
             'create' => Pages\CreateAsset::route('/create'),
             'edit' => Pages\EditAsset::route('/{record}/edit'),
-            'view' => Pages\ViewAsset::route('/{record}'),  // halaman show/detail
+            'view' => Pages\ViewAssetGroup::route('/group/{name}'),
         ];
-    }
-
-
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
     }
 }
