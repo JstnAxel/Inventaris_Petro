@@ -33,8 +33,7 @@ class StationaryResource extends Resource
     }
 
     protected static ?string $recordTitleAttribute = 'name';
-
-    protected static ?string $navigationIcon = 'heroicon-o-pencil';
+    protected static ?string $navigationIcon = 'heroicon-o-pencil';     
     protected static ?string $navigationGroup = 'Inventory';
 
     public static function form(Form $form): Form

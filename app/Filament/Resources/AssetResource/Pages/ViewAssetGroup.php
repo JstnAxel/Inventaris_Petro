@@ -16,18 +16,19 @@ class ViewAssetGroup extends Page implements HasTable
     protected static string $resource = AssetResource::class;
     protected static string $view = 'filament.resources.asset-resource.pages.view-asset-group';
     protected static ?string $title = 'Asset Items';
-    public string $name;
+    
+    public Asset $record;
 
-    public function mount(string $name): void
+    public function mount(Asset $record): void
     {
-        $this->name = $name;
+        $this->record = $record;
     }
 
     public function table(Table $table): Table
     {
         return $table
             ->query(
-                Asset::query()->where('name', $this->name)
+                Asset::query()->where('name', $this->record->name)
             )
             ->columns([
                 Tables\Columns\ImageColumn::make('image')->square()->label('Foto'),

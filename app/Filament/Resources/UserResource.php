@@ -67,7 +67,7 @@ class UserResource extends Resource
             ->columns([
                 TextColumn::make('name')->searchable(),
                 TextColumn::make('email')->searchable(),
-                TextColumn::make('department')->label('Departemen')->sortable()->searchable(),
+                TextColumn::make('department')->label('Departemen')->searchable(),
                 TextColumn::make('NIK')->searchable(),
                 TextColumn::make('roles.name')->badge()->label('Roles')
                     ->color(fn(string $state): string => match ($state) {
