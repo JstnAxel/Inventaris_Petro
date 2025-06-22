@@ -5,7 +5,9 @@
                 <select wire:model="requests.{{ $index }}.stationary_id" class="border rounded p-2" required>
                     <option value="">Pilih Alat Tulis</option>
                     @foreach($items as $item)
-                        <option class="text-black" value="{{ $item->id }}">{{ $item->name }} (stok: {{ $item->stock }})</option>
+                        @if (!in_array($item->id, array_column($requests, 'stationary_id')) || $item->id == $request['stationary_id'])
+                            <option class="text-black" value="{{ $item->id }}" data-stock="{{ $item->stock }}">{{ $item->name }} (stok: {{ $item->stock }})</option>
+                        @endif
                     @endforeach
                 </select>
 
@@ -62,58 +64,69 @@
     </table>
 </div>
 <script>
-    function confirmSubmit() {
-        let valid = true;
-        let errorMessage = '';
+function confirmSubmit() {
+    let valid = true;
+    let errorMessage = '';
 
-        // Ambil semua <select> dan <input number>
-        const selects = document.querySelectorAll('select[wire\\:model]');
-        const quantities = document.querySelectorAll('input[type="number"][wire\\:model]');
+    const selects = document.querySelectorAll('select[wire\\:model]');
+    const quantities = document.querySelectorAll('input[type="number"][wire\\:model]');
 
-        // Validasi <select>
-        selects.forEach(select => {
-            if (!select.value) {
-                valid = false;
-                errorMessage = 'Silakan pilih semua alat tulis sebelum mengirim.';
-                select.classList.add('border-red-500');
-            } else {
-                select.classList.remove('border-red-500');
-            }
-        });
+    selects.forEach((select, index) => {
+        const input = quantities[index];
+        const quantity = parseInt(input.value);
+        const selectedOption = select.options[select.selectedIndex];
+        const stock = parseInt(selectedOption.getAttribute('data-stock'));
 
-        // Validasi <input number>
-        quantities.forEach(input => {
-            let val = parseInt(input.value);
-            if (!val || val <= 0) {
-                valid = false;
-                errorMessage = 'Pastikan jumlah permintaan diisi dengan benar (min 1).';
-                input.classList.add('border-red-500');
-            } else {
-                input.classList.remove('border-red-500');
-            }
-        });
-
-        if (!valid) {
-            Swal.fire({
-                title: 'Form Belum Lengkap',
-                text: errorMessage,
-                icon: 'warning'
-            });
+        // Validasi kosong
+        if (!select.value) {
+            valid = false;
+            errorMessage = 'Silakan pilih semua alat tulis sebelum mengirim.';
+            select.classList.add('border-red-500');
             return;
+        } else {
+            select.classList.remove('border-red-500');
         }
 
-        // Jika valid, tampilkan konfirmasi
+        // Validasi jumlah
+        if (!quantity || quantity <= 0) {
+            valid = false;
+            errorMessage = 'Pastikan jumlah permintaan diisi dengan benar (min 1).';
+            input.classList.add('border-red-500');
+            return;
+        } else {
+            input.classList.remove('border-red-500');
+        }
+
+        // Validasi stok
+        if (quantity > stock) {
+            valid = false;
+            errorMessage = `Jumlah melebihi stok yang tersedia (${stock}) untuk permintaan ke-${index + 1}.`;
+            input.classList.add('border-red-500');
+        } else {
+            input.classList.remove('border-red-500');
+        }
+    });
+
+    if (!valid) {
         Swal.fire({
-            title: 'Kamu yakin?',
-            text: "Data akan dikirim!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Ya, kirim!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                @this.call('submit'); // Panggil Livewire method
-            }
+            title: 'Form Tidak Valid',
+            text: errorMessage,
+            icon: 'warning'
         });
+        return;
     }
+
+    Swal.fire({
+        title: 'Kamu yakin?',
+        text: "Data akan dikirim!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, kirim!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            @this.call('submit');
+        }
+    });
+}
 </script>

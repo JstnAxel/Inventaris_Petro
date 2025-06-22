@@ -13,7 +13,11 @@ class ListAssets extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\Action::make('create')
+                ->label('New Asset')
+                ->icon('heroicon-m-plus')
+                ->url(fn () => static::getResource()::getUrl('create'))
+                ->color('primary'),
         ];
     }
 }

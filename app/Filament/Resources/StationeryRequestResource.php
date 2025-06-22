@@ -27,6 +27,9 @@ class StationeryRequestResource extends Resource
             ->columns([
                 TextColumn::make('user.name')->label('User'),
                 TextColumn::make('stationary.name')->label('Item'),
+                TextColumn::make('stationary.stock')
+                    ->label('Stok')
+                    ->formatStateUsing(fn ($record) => "{$record->stationary->stock} {$record->stationary->unit}"),
                 TextColumn::make('quantity'),
                 TextColumn::make('status')
                     ->badge()

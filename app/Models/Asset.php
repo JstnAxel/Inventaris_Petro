@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
 
 
 class Asset extends Model
@@ -16,6 +18,7 @@ class Asset extends Model
     protected $fillable = [
         'code',
         'name',
+        'slug',
         'category_id',
         'quantity',
         'image',
@@ -23,6 +26,7 @@ class Asset extends Model
         'user_id',
         'note'
     ];
+
 
     public function category()
     {
@@ -53,6 +57,13 @@ class Asset extends Model
     {
         static::saving(function ($asset) {
         });
+
+        static::creating(function ($asset) {
+            if (empty($asset->slug)) {
+                $asset->slug = Str::slug($asset->name);
+            }
+        });
+
 
         static::creating(function ($model) {
             $category = \App\Models\Category::find($model->category_id);

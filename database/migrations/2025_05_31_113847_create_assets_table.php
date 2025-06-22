@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('code')->unique(); // custom ID unik
             $table->string('name');
+            $table->string('slug');
             $table->foreignId('category_id')
                 ->constrained('categories')
                 ->onDelete('cascade');

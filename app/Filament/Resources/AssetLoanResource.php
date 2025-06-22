@@ -5,8 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\AssetLoanResource\Pages\ListAssetLoans;
 use App\Models\Asset;
 use App\Models\AssetLoan;
-use Dom\Text;
-use Filament\Forms;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Resources\Resource;
@@ -44,22 +43,55 @@ class AssetLoanResource extends Resource
             ])
             ->actions([
                 // Di bagian approve action
-                Action::make('Approve')
-                    ->visible(fn($record) => $record->status === 'pending')
-                    ->requiresConfirmation()
-                    ->color('success')
-                    ->action(function ($record) {
-                        $asset = $record->asset;
+Action::make('Approve')
+    ->visible(fn($record) => $record->status === 'pending')
+    ->form([
+        Select::make('asset_id')
+            ->label('Pilih Asset')
+            ->options(function ($record) {
+                return \App\Models\Asset::where('status', 'available')
+                    ->where('name', $record->asset->name)
+                    ->pluck('code', 'id');
+            })
+            ->required(),
+    ])
+    ->requiresConfirmation()
+    ->color('success')
+        ->action(function ($data, $record) {
+            $asset = Asset::find($data['asset_id']);
 
-                        // Langsung set status approved dan asset jadi 'loaned'
-                        $record->update(['status' => 'approved']);
-                        $asset->update(['status' => 'loaned']);
+            $user = $record->user;
+            $departmentName = $user->department ?? 'UMUM';
+            $departmentCode = preg_replace('/[aeiouAEIOU]/', '', $departmentName);
 
-                        Notification::make()
-                            ->title('Permintaan disetujui')
-                            ->success()
-                            ->send();
-                    }),
+            $lastLoan = AssetLoan::whereNotNull('code')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            $lastNumber = 0;
+            if ($lastLoan) {
+                $parts = explode('/', $lastLoan->code);
+                if (count($parts) > 0) {
+                    $lastNumber = (int) ltrim($parts[0], '0');
+                }
+            }
+
+            $newNumber = str_pad($lastNumber + 1, 5, '0', STR_PAD_LEFT);
+            $kodePeminjaman = "{$newNumber}/{$departmentCode}/{$asset->code}";
+
+            $record->update([
+                'status' => 'approved',
+                'asset_id' => $asset->id,
+                'code' => $kodePeminjaman,
+            ]);
+
+            $asset->update(['status' => 'loaned']);
+
+            Notification::make()
+                ->title('Permintaan disetujui')
+                ->success()
+                ->send();
+        }),
 
                 // Di bagian return action
                 Action::make('Return')
@@ -92,25 +124,6 @@ class AssetLoanResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\BulkAction::make('approve')
-                        ->label('Approve Selected')
-                        ->icon('heroicon-o-check-circle')
-                        ->color('success')
-                        ->requiresConfirmation()
-                        ->action(function ($records) {
-                            foreach ($records as $record) {
-                                if ($record->status === 'pending') {
-                                    $record->update(['status' => 'approved']);
-                                    $record->asset->update(['status' => 'loaned']);
-                                }
-                            }
-
-                            Notification::make()
-                                ->title('Permintaan berhasil disetujui.')
-                                ->success()
-                                ->send();
-                        }),
-
                     Tables\Actions\BulkAction::make('reject')
                         ->label('Reject Selected')
                         ->icon('heroicon-o-x-circle')

@@ -23,7 +23,7 @@ class UserSeeder extends Seeder
         // Buat user admin, assign role admin dan permission view both (misal)
         $admin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
-            ['name' => 'Admin', 'password' => bcrypt('password'), 'department' => 'IT' ]
+            ['name' => 'Admin', 'password' => bcrypt('password'), 'department' => 'IT', 'NIK' => '12345678' ]
         );
         $admin->assignRole($adminRole);
         $admin->syncPermissions([$viewBoth]); // Bisa juga assign permission lain sesuai kebutuhan
@@ -31,7 +31,7 @@ class UserSeeder extends Seeder
         // User A hanya bisa view asset
         $userAsset = User::firstOrCreate(
             ['email' => 'user-asset@example.com'],
-            ['name' => 'User Asset', 'password' => bcrypt('password'), 'department' => 'Umum' ]
+            ['name' => 'User Asset', 'password' => bcrypt('password'), 'department' => 'Umum', 'NIK' => '12345678']
         );
         $userAsset->assignRole($userRole);
         $userAsset->syncPermissions([$viewAsset]);
@@ -39,7 +39,7 @@ class UserSeeder extends Seeder
         // User B hanya bisa view stationary
         $userStationary = User::firstOrCreate(
             ['email' => 'user-stationary@example.com'],
-            ['name' => 'User Stationary', 'password' => bcrypt('password'), 'department' => 'AUDIT' ]
+            ['name' => 'User Stationary', 'password' => bcrypt('password'), 'department' => 'AUDIT', 'NIK' => '12345678']
         );
         $userStationary->assignRole($userRole);
         $userStationary->syncPermissions([$viewStationary]);
@@ -47,7 +47,7 @@ class UserSeeder extends Seeder
         // User C bisa view keduanya
         $userBoth = User::firstOrCreate(
             ['email' => 'user-both@example.com'],
-            ['name' => 'User Both', 'password' => bcrypt('password'), 'department' => 'SDM' ]
+            ['name' => 'User Both', 'password' => bcrypt('password'), 'department' => 'SDM', 'NIK' => '12345678'  ]
         );
         $userBoth->assignRole($userRole);
         $userBoth->syncPermissions([$viewBoth]);

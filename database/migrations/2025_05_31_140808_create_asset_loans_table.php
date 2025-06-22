@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('asset_loans', function (Blueprint $table) {
             $table->id();
-            $table->string('code'); // custom ID unik
+            $table->string('code')->nullable(); // custom ID unik
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('asset_id')->constrained()->onDelete('cascade');
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');

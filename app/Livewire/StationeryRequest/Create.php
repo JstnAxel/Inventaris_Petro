@@ -34,12 +34,13 @@ class Create extends Component
 
     public function submit()
     {
+        $stationaryMap = Stationary::whereIn('id', collect($this->requests)->pluck('stationary_id'))->get()->keyBy('id');
+
         $this->validate([
             'requests.*.stationary_id' => [
                 'required',
-                function ($attribute, $value, $fail) {
-                    $id = data_get($this->requests, explode('.', $attribute)[1] . '.stationary_id');
-                    $item = Stationary::find($id);
+                function ($attribute, $value, $fail) use ($stationaryMap) {
+                    $item = $stationaryMap[$value] ?? null;
                     if (!$item || $item->stock <= 0) {
                         $fail("Stok tidak tersedia.");
                     }
@@ -49,10 +50,10 @@ class Create extends Component
                 'required',
                 'integer',
                 'min:1',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail) use ($stationaryMap) {
                     $index = explode('.', $attribute)[1];
                     $stationary_id = $this->requests[$index]['stationary_id'] ?? null;
-                    $item = Stationary::find($stationary_id);
+                    $item = $stationaryMap[$stationary_id] ?? null;
                     if ($item && $value > $item->stock) {
                         $fail("Jumlah melebihi stok untuk {$item->name}.");
                     }
@@ -80,13 +81,13 @@ class Create extends Component
 
     public function render()
     {
-    $items = Stationary::where('stock', '>', 0)->get();
-    $history = StationeryRequest::with('stationary')
-        ->where('user_id', Auth::id())
-        ->latest()
-        ->take(10)
-        ->get();
+        $items = Stationary::where('stock', '>', 0)->get();
+        $history = StationeryRequest::with('stationary')
+            ->where('user_id', Auth::id())
+            ->latest()
+            ->take(10)
+            ->get();
 
-    return view('livewire.stationery-request.create', compact('items', 'history'));
+        return view('livewire.stationery-request.create', compact('items', 'history'));
     }
 }
