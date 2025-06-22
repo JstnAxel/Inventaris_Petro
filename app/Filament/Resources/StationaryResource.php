@@ -9,17 +9,21 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class StationaryResource extends Resource
 {
     protected static ?string $model = Stationary::class;
+
+    protected static ?int $recordsPerPage = 5;         // jumlah per halaman
 
     protected static ?string $slug = 'inventory/stationery';
 
@@ -33,7 +37,7 @@ class StationaryResource extends Resource
     }
 
     protected static ?string $recordTitleAttribute = 'name';
-    protected static ?string $navigationIcon = 'heroicon-o-pencil';     
+    protected static ?string $navigationIcon = 'heroicon-o-pencil';
     protected static ?string $navigationGroup = 'Inventory';
 
     public static function form(Form $form): Form
@@ -90,6 +94,27 @@ class StationaryResource extends Resource
                     ->visible(fn($record) => $record->trashed())
                     ->requiresConfirmation()
                     ->color('danger'),
+                                Tables\Actions\Action::make('tambah_stok')
+                ->label('Tambah Stok')
+                ->icon('heroicon-o-plus')
+                ->color('success')
+                ->form([
+                    TextInput::make('jumlah')
+                        ->label('Jumlah Stok Tambahan')
+                        ->numeric()
+                        ->minValue(1)
+                        ->required(),
+                ])
+                ->action(function (Model $record, array $data): void {
+                    $record->increment('stock', $data['jumlah']);
+                    Notification::make()
+                        ->title('Stok berhasil ditambahkan')
+                        ->success()
+                        ->body("Stok {$record->name} bertambah {$data['jumlah']} unit.")
+                        ->send();
+                })
+                ->visible(fn($record) => !$record->trashed()),
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

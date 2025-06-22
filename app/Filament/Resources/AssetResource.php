@@ -16,6 +16,14 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Actions\Action;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
+use Filament\Tables\Actions\ForceDeleteAction;
+use Filament\Tables\Actions\RestoreAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\ForceDeleteBulkAction;
+use Filament\Tables\Actions\RestoreBulkAction;
+
+
 
 
 class AssetResource extends Resource
@@ -34,11 +42,12 @@ class AssetResource extends Resource
     public static function getGlobalSearchEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
         $ids = parent::getEloquentQuery()
+            ->withTrashed() // take trashed too
             ->selectRaw('MIN(id) as id')
             ->groupBy('name')
             ->pluck('id');
 
-        return parent::getEloquentQuery()->whereIn('id', $ids);
+        return parent::getEloquentQuery()->withTrashed()->whereIn('id', $ids);
     }
 
 
@@ -96,10 +105,11 @@ class AssetResource extends Resource
         return $table
             ->query(function () {
                 $ids = Asset::query()
+                    ->withTrashed() // take trashed too
                     ->selectRaw('MIN(id) as id')
                     ->groupBy('name')
                     ->pluck('id');
-                return Asset::query()->whereIn('id', $ids);
+                return Asset::query()->withTrashed()->whereIn('id', $ids);
             })
             ->columns([
                 TextColumn::make('name')->label('Asset Name')->searchable(),
@@ -123,7 +133,7 @@ class AssetResource extends Resource
                     ->color(fn($state) => match ($state) {
                         'loaned' => 'warning',
                         'available' => 'success',
-                        'maintenance' => 'danger',      
+                        'maintenance' => 'danger',
                         default => 'gray',
                     }),
                 TextColumn::make('created_at')
@@ -151,10 +161,34 @@ class AssetResource extends Resource
                     ->button()
                     ->color('primary')
                     ->url(fn($record) => route('filament.admin.resources.inventory.assets.view', $record)),
+                                ForceDeleteAction::make()
+                ->label('Delete Permanent')
+                ->color('danger')
+                ->requiresConfirmation(),
+
+            RestoreAction::make()
+                ->label('Restore')
+                ->color('success')
+                ->requiresConfirmation(),
+
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
-            ]);
+            ])
+            ->bulkActions([
+            BulkActionGroup::make([
+                DeleteBulkAction::make(),
+                ForceDeleteBulkAction::make()
+                    ->label('Delete Permanent')
+                    ->color('danger')
+                    ->requiresConfirmation(),
+                RestoreBulkAction::make()
+                    ->label('Restore')
+                    ->color('success')
+                    ->requiresConfirmation(),
+            ]),
+        ]);
+
     }
 
     public static function getPages(): array

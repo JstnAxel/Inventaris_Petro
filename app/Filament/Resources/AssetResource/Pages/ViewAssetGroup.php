@@ -16,7 +16,7 @@ class ViewAssetGroup extends Page implements HasTable
     protected static string $resource = AssetResource::class;
     protected static string $view = 'filament.resources.asset-resource.pages.view-asset-group';
     protected static ?string $title = 'Asset Items';
-    
+
     public Asset $record;
 
     public function mount(Asset $record): void
@@ -46,23 +46,31 @@ class ViewAssetGroup extends Page implements HasTable
                 Tables\Columns\TextColumn::make('user.name')->label('Input By')->sortable(),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->url(fn($record) => route('filament.admin.resources.inventory.assets.edit', ['record' => $record->getKey()])),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\RestoreAction::make(),
-                Tables\Actions\ForceDeleteAction::make()
-                    ->label('Delete Permanent')
+                Tables\Actions\DeleteAction::make()
+                    ->label('Delete')
                     ->requiresConfirmation()
-                    ->color('danger'),
+                    ->color('danger')
+                    ->action(fn(Asset $record) => $record->delete())
+    ->after(function () {
+        // pakai Filament notification kalau mau
+        return redirect(AssetResource::getUrl('index'));
+    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\BulkAction::make('delete')
+                        ->label('Delete Permanent')
+                        ->requiresConfirmation()
+                        ->color('danger')
+                        ->action(fn(\Illuminate\Support\Collection $records) => $records->each->delete())
+    ->after(function () {
+        // pakai Filament notification kalau mau
+        return redirect(AssetResource::getUrl('index'));
+    }),
                 ]),
             ]);
     }
