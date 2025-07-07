@@ -4,15 +4,11 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\StationeryRequestResource\Pages\ListStationeryRequests;
 use App\Models\StationeryRequest;
-use Dom\Text;
-use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Resources\Resource;
-use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\BadgeColumn;
 
 class StationeryRequestResource extends Resource
 {
@@ -26,7 +22,7 @@ class StationeryRequestResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('user.name')->label('User'),
-                TextColumn::make('stationary.name')->label('Item'),
+                TextColumn::make('stationary.name')->label('Item')->searchable(),
                 TextColumn::make('stationary.stock')
                     ->label('Stok')
                     ->formatStateUsing(fn ($record) => "{$record->stationary->stock} {$record->stationary->unit}"),
@@ -78,6 +74,16 @@ class StationeryRequestResource extends Resource
                     }),
 
             ])
+        ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Status')
+                    ->options([
+                        'pending' => 'Pending',
+                        'approved' => 'Approved',
+                        'rejected' => 'Rejected',
+                    ]),
+            ])
+
         ->bulkActions([
             Tables\Actions\BulkActionGroup::make([
                 Tables\Actions\DeleteBulkAction::make(),

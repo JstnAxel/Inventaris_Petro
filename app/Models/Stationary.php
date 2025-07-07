@@ -25,6 +25,31 @@ class Stationary extends Model
         'price'
     ];
 
+    // App\Models\Stationary.php
+
+public function getPemasukanAttribute(): int
+{
+    $bulan = request('tableFilters.bulan_tahun.bulan') ?? now()->format('m');
+    $tahun = request('tableFilters.bulan_tahun.tahun') ?? now()->format('Y');
+
+    return $this->stockHistories()
+        ->whereMonth('created_at', $bulan)
+        ->whereYear('created_at', $tahun)
+        ->sum('amount');
+}
+
+public function getPengeluaranAttribute(): int
+{
+    $bulan = request('tableFilters.bulan_tahun.bulan') ?? now()->format('m');
+    $tahun = request('tableFilters.bulan_tahun.tahun') ?? now()->format('Y');
+
+    return $this->stationeryRequests()
+        ->where('status', 'approved')
+        ->whereMonth('created_at', $bulan)
+        ->whereYear('created_at', $tahun)
+        ->sum('quantity');
+}
+
     public function category()
     {
         return $this->belongsTo(Category::class);
@@ -34,6 +59,17 @@ class Stationary extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function stockHistories()
+{
+    return $this->hasMany(StationaryStockHistory::class);
+}
+
+public function stationeryRequests()
+{
+    return $this->hasMany(StationeryRequest::class);
+}
+
 
     public static function removeVowels($string)
     {

@@ -62,7 +62,7 @@ class AssetResource extends Resource
 
             TextInput::make('name')
                 ->required()
-                ->live(debounce: 1000)
+                ->live(debounce: 2000)
                 ->datalist(
                     Asset::query()->select('name')->distinct()->pluck('name')->toArray()
                 )
@@ -103,6 +103,14 @@ class AssetResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+        ->headerActions([
+    Action::make('exportExcel')
+        ->label('Export ke Excel')
+        ->icon('heroicon-o-document')
+        ->url(route('export.assets'))
+        ->openUrlInNewTab(),
+])
+
             ->query(function () {
                 $ids = Asset::query()
                     ->withTrashed() // take trashed too

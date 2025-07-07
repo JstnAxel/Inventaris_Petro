@@ -5,7 +5,9 @@
                 <select wire:model="rows.{{ $index }}.asset_id" class="border rounded p-2" required>
                     <option value="">Pilih Asset</option>
                     @foreach ($assets as $asset)
-                        <option class="text-black" value="{{ $asset->id }}">{{ $asset->name }}</option>
+                        @if (!in_array($asset->id, array_column($rows, 'asset_id')) || $asset->id == $row['asset_id'])
+                            <option class="text-black" value="{{ $asset->id }}">{{ $asset->name }}</option>
+                        @endif
                     @endforeach
                 </select>
 

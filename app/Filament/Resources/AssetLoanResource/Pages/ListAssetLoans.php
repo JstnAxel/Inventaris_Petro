@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\AssetLoanResource\Pages;
 
 use App\Filament\Resources\AssetLoanResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListAssetLoans extends ListRecords
@@ -14,4 +13,5 @@ class ListAssetLoans extends ListRecords
     {
         return false;
     }
+
 }

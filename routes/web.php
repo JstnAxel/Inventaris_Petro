@@ -31,4 +31,7 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
+Route::get('/export-stationary', \App\Http\Controllers\StationaryExportController::class)->name('export.stationary');
+Route::get('/export-assets', \App\Http\Controllers\AssetExportController::class)->name('export.assets');
+
 require __DIR__.'/auth.php';

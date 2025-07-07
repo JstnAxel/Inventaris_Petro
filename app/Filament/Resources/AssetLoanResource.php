@@ -20,13 +20,14 @@ class AssetLoanResource extends Resource
 
 
 
+
     public static function table(Tables\Table $table): Tables\Table
     {
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('user.name')->label('User'),
-                TextColumn::make('asset.name')->label('Asset'),
+                TextColumn::make('asset.name')->label('Asset')->searchable(),
                 TextColumn::make('code')->label('Code'),
                 TextColumn::make('status')
                     ->badge()
@@ -43,55 +44,55 @@ class AssetLoanResource extends Resource
             ])
             ->actions([
                 // Di bagian approve action
-Action::make('Approve')
-    ->visible(fn($record) => $record->status === 'pending')
-    ->form([
-        Select::make('asset_id')
-            ->label('Pilih Asset')
-            ->options(function ($record) {
-                return \App\Models\Asset::where('status', 'available')
-                    ->where('name', $record->asset->name)
-                    ->pluck('code', 'id');
-            })
-            ->required(),
-    ])
-    ->requiresConfirmation()
-    ->color('success')
-        ->action(function ($data, $record) {
-            $asset = Asset::find($data['asset_id']);
+                Action::make('Approve')
+                    ->visible(fn($record) => $record->status === 'pending')
+                    ->form([
+                        Select::make('asset_id')
+                            ->label('Pilih Asset')
+                            ->options(function ($record) {
+                                return Asset::where('status', 'available')
+                                    ->where('name', $record->asset->name)
+                                    ->pluck('code', 'id');
+                            })
+                            ->required(),
+                    ])
+                    ->requiresConfirmation()
+                    ->color('success')
+                    ->action(function ($data, $record) {
+                        $asset = Asset::find($data['asset_id']);
 
-            $user = $record->user;
-            $departmentName = $user->department ?? 'UMUM';
-            $departmentCode = preg_replace('/[aeiouAEIOU]/', '', $departmentName);
+                        $user = $record->user;
+                        $departmentName = $user->department ?? 'UMUM';
+                        $departmentCode = preg_replace('/[aeiouAEIOU]/', '', $departmentName);
 
-            $lastLoan = AssetLoan::whereNotNull('code')
-                ->orderBy('created_at', 'desc')
-                ->first();
+                        $lastLoan = AssetLoan::whereNotNull('code')
+                            ->orderBy('created_at', 'desc')
+                            ->first();
 
-            $lastNumber = 0;
-            if ($lastLoan) {
-                $parts = explode('/', $lastLoan->code);
-                if (count($parts) > 0) {
-                    $lastNumber = (int) ltrim($parts[0], '0');
-                }
-            }
+                        $lastNumber = 0;
+                        if ($lastLoan) {
+                            $parts = explode('/', $lastLoan->code);
+                            if (count($parts) > 0) {
+                                $lastNumber = (int) ltrim($parts[0], '0');
+                            }
+                        }
 
-            $newNumber = str_pad($lastNumber + 1, 5, '0', STR_PAD_LEFT);
-            $kodePeminjaman = "{$newNumber}/{$departmentCode}/{$asset->code}";
+                        $newNumber = str_pad($lastNumber + 1, 5, '0', STR_PAD_LEFT);
+                        $kodePeminjaman = "{$newNumber}/{$departmentCode}/{$asset->code}";
 
-            $record->update([
-                'status' => 'approved',
-                'asset_id' => $asset->id,
-                'code' => $kodePeminjaman,
-            ]);
+                        $record->update([
+                            'status' => 'approved',
+                            'asset_id' => $asset->id,
+                            'code' => $kodePeminjaman,
+                        ]);
 
-            $asset->update(['status' => 'loaned']);
+                        $asset->update(['status' => 'loaned']);
 
-            Notification::make()
-                ->title('Permintaan disetujui')
-                ->success()
-                ->send();
-        }),
+                        Notification::make()
+                            ->title('Permintaan disetujui')
+                            ->success()
+                            ->send();
+                    }),
 
                 // Di bagian return action
                 Action::make('Return')
@@ -101,13 +102,24 @@ Action::make('Approve')
                         $asset = $record->asset;
                         $record->update(['is_returned' => true]);
                         $asset->update(['status' => 'available']);
+                        Notification::make()
+                            ->title('Asset Telah Dikembalikan')
+                            ->success()
+                            ->send();
                     }),
 
                 Action::make('Reject')
                     ->visible(fn($record) => $record->status === 'pending')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn($record) => $record->update(['status' => 'rejected'])),
+                    ->action(function ($record) {
+                        $record->update(['status' => 'rejected']);
+
+                        return Notification::make()
+                            ->title('Permintaan Ditolak')
+                            ->danger()
+                            ->send();
+                    }),
 
                 Action::make('Delete History')
                     ->color('danger')
@@ -121,6 +133,23 @@ Action::make('Approve')
                             ->send();
                     }),
             ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Status')
+                    ->options([
+                        'pending' => 'Pending',
+                        'approved' => 'Approved',
+                        'rejected' => 'Rejected',
+                    ]),
+
+                Tables\Filters\SelectFilter::make('is_returned')
+                    ->label('Returned')
+                    ->options([
+                        '1' => 'Yes',
+                        '0' => 'No',
+                    ]),
+            ])
+
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
