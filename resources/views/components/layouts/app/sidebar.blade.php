@@ -21,20 +21,20 @@
 
     @can('view asset')
     <flux:navlist.item icon="clipboard-document" :href="route('loan-asset')" :current="request()->routeIs('loan-asset')" wire:navigate>
-        {{ __('Loan Asset') }}
+        {{ __('Peminjaman Asset') }}
     </flux:navlist.item>
     @endcan
     @can('view stationary')
     <flux:navlist.item icon="clipboard-document-check" :href="route('request-stationery')" :current="request()->routeIs('request-stationery')" wire:navigate>
-        {{ __('Request Stationery') }}
+        {{ __('Permintaan Stationery') }}
     </flux:navlist.item>
     @endcan
         @can('view both')
     <flux:navlist.item icon="clipboard-document" :href="route('loan-asset')" :current="request()->routeIs('loan-asset')" wire:navigate>
-        {{ __('Loan Asset') }}
+        {{ __('Peminjaman Asset') }}
     </flux:navlist.item>
     <flux:navlist.item icon="clipboard-document-check" :href="route('request-stationery')" :current="request()->routeIs('request-stationery')" wire:navigate>
-        {{ __('Request Stationery') }}
+        {{ __('Permintaan Stationery') }}
     </flux:navlist.item>
     @endcan
 
